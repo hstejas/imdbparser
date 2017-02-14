@@ -4,6 +4,19 @@ Convert the IMDB alternate interfaces text files to an SQLite database or csv fi
 
 Data Source: http://www.imdb.com/interfaces
 
+## How to build
+
+This uses CMake and requires SQLite[optional]
+
+To use SQLite the cli make command would look like
+
+    mkdir build
+    cd build
+    cmake -DCMAKE_BUILD_TYPE:STRING=Release -DSQLITE3_INCLUDE_DIR:PATH=/usr/include -DSQLITE3_LIBRARY:STRING=sqlite3 ..
+    make
+
+OR use cmake GUI or cmake to provide options interactively
+
 
 ## usage:
 
@@ -13,5 +26,4 @@ The source files are encoded in ISO-8859-1 but sqlite supports utf8 and can be c
 
 ### Using the command
     
-    ./imdbparser.exe ./imdbout.sqlite ./u8ratings.list [./u8language.list] [./certificates.list] [./genres.list] [./running-times.list]
-    
+    ./imdbparser.exe ./imdbout.sqlite ./u8ratings.list [./u8language.list] [./u8certificates.list] [./u8genres.list] [./u8running-times.list]
