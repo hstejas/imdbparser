@@ -21,6 +21,7 @@ public:
 	void printToSQLite(const std::string& outFilePath);
 
 protected:
+
 	struct MovieInfo
 	{
 		MovieInfo() {}
@@ -42,4 +43,5 @@ protected:
 	typedef std::unordered_map<std::string, MovieInfo> MovieMap;
 	std::unordered_map<std::string, MovieInfo> mMovies;
 
+	bool parse2(const std::string & inFilePath, void(*add)(MovieMap::iterator& itr, const std::string&));
 };

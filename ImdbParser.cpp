@@ -1,7 +1,47 @@
+#include <sstream>
 #include "ImdbParser.h"
 #ifdef USE_SQLITE3
 #include <sqlite3.h> 
 #endif
+
+void split2(const std::string& in, std::pair<std::string, std::string>& out, const char delim = '\t')
+{
+	unsigned int posStart = in.find_first_of(delim, 0);
+	unsigned int posEnd = posStart + 1;
+	for (posEnd; in[posEnd] == delim && posEnd < in.length(); ++posEnd);
+	out.first = in.substr(0, posStart);
+	out.second = in.substr(posEnd, in.length() - posEnd);
+}
+
+bool ImdbParser::parse2(const std::string& inFilePath, void (*add)(MovieMap::iterator& itr, const std::string&))
+{
+	std::ifstream fin(inFilePath);
+	if (fin)
+	{
+		std::string line;
+		MovieMap::iterator movIt = mMovies.end();
+		std::pair<std::string, std::string> sPair;
+		while (std::getline(fin, line))
+		{
+			split2(line, sPair);
+			movIt = mMovies.find(sPair.first);
+			if (movIt != mMovies.end())
+			{
+				add(movIt, sPair.second);
+			}
+			//else
+			//{
+			//	std::cerr << "No Show found for Language entry: " << line << std::endl;
+			//}			
+		}
+	}
+	else
+	{
+		std::cerr << "Error : could not open " << inFilePath << std::endl;
+		return false;
+	}
+	return true;
+}
 
 
 bool ImdbParser::parseRatings(const std::string& ratingFilePath)
@@ -58,134 +98,26 @@ bool ImdbParser::parseRatings(const std::string& ratingFilePath)
 
 bool ImdbParser::parseLanguages(const std::string& languageFilePath)
 {
-	std::ifstream fin(languageFilePath);
-	std::regex split("^(.*?)\\s{2,}(.*)$");
-	if (fin)
-	{
-		std::string line;
-		MovieMap::iterator movIt = mMovies.end();
-		while (std::getline(fin, line))
-		{
-			std::smatch match;
-			if (std::regex_match(line, match, split) && match.size() == 3)
-			{
-				movIt = mMovies.find(match.str(1));
-				if (movIt != mMovies.end())
-				{
-					movIt->second.mLanguages.push_back(match.str(2));
-				}
-				//else
-				//{
-				//	std::cerr << "No Show found for Language entry: " << line << std::endl;
-				//}
-			}
-		}
-	}
-	else
-	{
-		std::cerr << "Error : could not open " << languageFilePath << std::endl;
-		return false;
-	}
-	return true;
+	return parse2(languageFilePath, 
+		[](MovieMap::iterator& itr, const std::string& inStr) {itr->second.mLanguages.push_back(inStr); });
 }
 
 bool ImdbParser::parseCertificates(const std::string& certificateFilePath)
 {
-	std::ifstream fin(certificateFilePath);
-	std::regex split("^(.*?)\\s{2,}(.*)$");
-	if (fin)
-	{
-		std::string line;
-		MovieMap::iterator movIt = mMovies.end();
-		while (std::getline(fin, line))
-		{
-			std::smatch match;
-			if (std::regex_match(line, match, split) && match.size() == 3)
-			{
-				movIt = mMovies.find(match.str(1));
-				if (movIt != mMovies.end())
-				{			
-					movIt->second.mCertificates.push_back(match.str(2));
-				}
-				//else
-				//{
-				//	std::cerr << "No Show found for Certificate entry: " << line << std::endl;
-				//}
-			}
-		}
-	}
-	else
-	{
-		std::cerr << "Error : could not open " << certificateFilePath << std::endl;
-		return false;
-	}
-	return true;
+	return parse2(certificateFilePath,
+		[](MovieMap::iterator& itr, const std::string& inStr) {itr->second.mCertificates.push_back(inStr); });
 }
 
 bool ImdbParser::parseGeneres(const std::string & genereFilePath)
 {
-	std::ifstream fin(genereFilePath);
-	std::regex split("^(.*?)\\s{2,}(.*)$");
-	if (fin)
-	{
-		std::string line;
-		MovieMap::iterator movIt = mMovies.end();
-		while (std::getline(fin, line))
-		{
-			std::smatch match;
-			if (std::regex_match(line, match, split) && match.size() == 3)
-			{
-				movIt = mMovies.find(match.str(1));
-				if (movIt != mMovies.end())
-				{
-					movIt->second.mGenere.push_back(match.str(2));
-				}
-				//else
-				//{
-				//	std::cerr << "No Show found for Genere entry: " << line << std::endl;
-				//}
-			}
-		}
-	}
-	else
-	{
-		std::cerr << "Error : could not open " << genereFilePath << std::endl;
-		return false;
-	}
-	return true;
+	return parse2(genereFilePath,
+		[](MovieMap::iterator& itr, const std::string& inStr) {itr->second.mGenere.push_back(inStr); });
 }
 
 bool ImdbParser::parseRuntime(const std::string & runtimeFilePath)
 {
-	std::ifstream fin(runtimeFilePath);
-	std::regex split("^(.*?)\\s{2,}(.*)$");
-	if (fin)
-	{
-		std::string line;
-		MovieMap::iterator movIt = mMovies.end();
-		while (std::getline(fin, line))
-		{
-			std::smatch match;
-			if (std::regex_match(line, match, split) && match.size() == 3)
-			{
-				movIt = mMovies.find(match.str(1));
-				if (movIt != mMovies.end())
-				{
-					movIt->second.mRuntime.push_back(match.str(2));
-				}
-				//else
-				//{
-				//	std::cerr << "No Show found for runtime entry: " << line << std::endl;
-				//}
-			}
-		}
-	}
-	else
-	{
-		std::cerr << "Error : could not open " << runtimeFilePath << std::endl;
-		return false;
-	}
-	return true;
+	return parse2(runtimeFilePath,
+		[](MovieMap::iterator& itr, const std::string& inStr) {itr->second.mRuntime.push_back(inStr); });
 }
 
 template <typename T>
