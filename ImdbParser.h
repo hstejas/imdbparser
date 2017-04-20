@@ -1,12 +1,25 @@
 #pragma once
 
-#include <iostream>
-#include <fstream>
+#include <map>
 #include <string>
-#include <regex>
-#include <thread>
+#include <vector>
 #include <unordered_map>
+#include <functional>
+#ifdef USE_SQLITE3
+#include <sqlite3.h> 
+#define CHECK_ERR(x,y) x = y; x != SQLITE_OK?std::cerr << __LINE__ << " Error: " << #y <<  sqlite3_errmsg(db) << std::endl :  std::cerr << "";
+#endif
 
+class IndexedStr
+{
+public:
+	IndexedStr();
+	unsigned int getId(const std::string & in);
+	void printToSqlite(sqlite3 *db, const std::string & tableName);
+protected:
+	unsigned int mIndex;
+	std::map<std::string, unsigned int> mMap;
+};
 
 class ImdbParser
 {
@@ -25,23 +38,30 @@ protected:
 	struct MovieInfo
 	{
 		MovieInfo() {}
-		MovieInfo(float rating, int count, const std::string& distribution) :
-			mRating(rating), mCount(count), mDistribution(distribution) {}
+		MovieInfo(unsigned int index, float rating, int count, const std::string& distribution) :
+			mIndex(index), mRating(rating), mCount(count), mDistribution(distribution) {}
 		MovieInfo(const MovieInfo& src) :
-			mRating(src.mRating), mCount(src.mCount), mDistribution(src.mDistribution) {}
+			mIndex(src.mIndex), mRating(src.mRating), mCount(src.mCount), mDistribution(src.mDistribution) {}
 		float mRating;
 		int mCount;
 		int mYear;
 		std::string mDistribution;
-		std::vector<std::string> mLanguages;
-		std::vector<std::string> mCertificates;
+		std::vector<unsigned int> mLanguages;
+		std::vector<unsigned int> mCertificates;
 		std::string mType;
-		std::vector<std::string> mGenere;
-		std::vector<std::string> mRuntime;
+		std::vector<unsigned int> mGenere;
+		std::vector<unsigned int> mRuntime;
+		unsigned int mIndex;
 	};
 
-	typedef std::unordered_map<std::string, MovieInfo> MovieMap;
-	std::unordered_map<std::string, MovieInfo> mMovies;
+	IndexedStr mGenere;
+	IndexedStr mLanguages;
+	IndexedStr mCertificates;
+	IndexedStr mRuntime;
 
-	bool parse2(const std::string & inFilePath, void(*add)(MovieMap::iterator& itr, const std::string&));
+	typedef std::unordered_map<std::string, MovieInfo> MovieMap;
+	MovieMap mMovies;
+
+	bool parse2(const std::string & inFilePath, std::function<void (MovieMap::iterator& itr, const std::string&)>);
+	void createJuntion(sqlite3 *db, std::string tableName, std::function<const std::vector<unsigned int>&(const MovieInfo& info)> getVector);
 };
